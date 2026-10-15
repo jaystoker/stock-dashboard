@@ -2917,7 +2917,8 @@
     "readonly": {
       "mode": "paper",
       "real_trading_enabled": false,
-      "max_order_value": 6000000,
+      "max_order_ratio": 0.65,
+      "max_order_value": 50000000,
       "mdd_limit": 0.2,
       "initial_capital": 10000000
     }

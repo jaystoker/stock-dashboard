@@ -19,7 +19,7 @@ import {
   prepareComparison,
 } from "./charts.js";
 
-export const APP_VERSION = "1.0.1";
+export const APP_VERSION = "1.0.2";
 export const SNAPSHOT_SCHEMA = 1;
 // 샘플 모드 (?sample=1): 같은 출처의 합성 예시 스냅샷만 읽는다 — 토큰·GitHub 호출·요청 전송·저장소 쓰기 없음
 export const SAMPLE_PARAM = "sample";
@@ -154,6 +154,26 @@ export function formatSignedPercent(ratio, digits = 2) {
   if (!isFiniteNumber(ratio)) return EMPTY;
   const pct = ratio * 100;
   return `${signPrefix(pct, digits)}${formatNumber(Math.abs(pct), digits)}%`;
+}
+
+/** 만원 단위로 나눠떨어지면 "5,000만원", 아니면 정확한 원 단위 (상한 금액은 반올림하지 않는다). */
+function formatWonExactCompact(value) {
+  if (!isFiniteNumber(value)) return EMPTY;
+  return value !== 0 && value % 1e4 === 0 ? `${formatNumber(value / 1e4)}만원` : formatWon(value);
+}
+
+/**
+ * 단일 매수 상한 = min(총자산 × max_order_ratio, max_order_value):
+ * "총자산의 65% (최대 5,000만원)". 비율이 없으면 절대 상한만, 둘 다 없으면 "—".
+ */
+export function formatBuyLimit(ratio, maxValue) {
+  const hasRatio = isFiniteNumber(ratio) && ratio > 0;
+  const hasMax = isFiniteNumber(maxValue) && maxValue > 0;
+  if (!hasRatio) return hasMax ? formatWon(maxValue) : EMPTY;
+  const pct = ratio * 100;
+  const digits = Math.abs(pct - Math.round(pct)) < 1e-6 ? 0 : 1;
+  const head = `총자산의 ${formatNumber(pct, digits)}%`;
+  return hasMax ? `${head} (최대 ${formatWonExactCompact(maxValue)})` : head;
 }
 
 /** 손익 색 클래스: up(이익·빨강) / down(손실·파랑) / flat. */
@@ -475,6 +495,7 @@ export function parseSnapshot(input) {
     readonly: {
       mode: str(readonlyRaw.mode),
       real_trading_enabled: bool(readonlyRaw.real_trading_enabled),
+      max_order_ratio: num(readonlyRaw.max_order_ratio),
       max_order_value: num(readonlyRaw.max_order_value),
       mdd_limit: num(readonlyRaw.mdd_limit),
       initial_capital: num(readonlyRaw.initial_capital),
@@ -2167,7 +2188,7 @@ function readonlyCard(snapshot) {
   const rows = [
     ["모드", MODE_LABELS[ro.mode] ?? (ro.mode || EMPTY)],
     ["실전 주문 허용", ro.real_trading_enabled ? "허용" : "차단"],
-    ["1회 주문 상한", formatWon(ro.max_order_value)],
+    ["단일 매수 상한", formatBuyLimit(ro.max_order_ratio, ro.max_order_value)],
     ["MDD 한도", formatPercent(ro.mdd_limit, 0)],
     ["운용 원금", formatWon(ro.initial_capital)],
   ];

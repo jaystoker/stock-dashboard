@@ -1,7 +1,7 @@
 // 서비스 워커: 앱 셸(정적 파일)만 캐시한다. GitHub API 응답(스냅샷·요청)은 절대 캐시하지 않는다.
 // 앱 파일을 바꾸면 CACHE_VERSION 을 올린다 → 새 캐시 설치, 옛 캐시 삭제.
 
-const CACHE_VERSION = "v1.0.1";
+const CACHE_VERSION = "v1.0.2";
 const CACHE_PREFIX = "stockdash-shell-";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
